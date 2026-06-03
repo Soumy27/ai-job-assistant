@@ -99,7 +99,7 @@ const ResumeUpload = () => {
           <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs mb-lg">
             {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB PDF` : 'Select a PDF to extract your details.'}
           </p>
-          <div className="flex gap-md w-full max-w-md">
+          <div className="flex gap-md w-full max-w-[28rem]">
             <button onClick={() => fileInputRef.current?.click()}
               className="flex-1 bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md py-md rounded-lg transition-colors">
               {file ? 'Change File' : 'Select PDF'}

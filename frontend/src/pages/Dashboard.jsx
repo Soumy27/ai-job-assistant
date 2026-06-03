@@ -271,7 +271,7 @@ const Dashboard = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-on-background/40 backdrop-blur-sm flex items-center justify-center z-50 p-md">
-          <div className="bg-surface rounded-xl p-lg w-full max-w-md shadow-2xl border border-outline-variant/30">
+          <div className="bg-surface rounded-xl p-lg w-full max-w-[28rem] shadow-2xl border border-outline-variant/30">
             <h3 className="font-headline-md text-headline-md text-on-background mb-xs">Add Application</h3>
             <p className="font-body-sm text-body-sm text-on-surface-variant mb-md">Manually track a job you applied for elsewhere.</p>
             <input type="text" value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder="Company Name"

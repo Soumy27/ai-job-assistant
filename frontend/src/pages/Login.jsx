@@ -59,7 +59,7 @@ const Login = () => {
       <div className="fixed -top-40 -left-40 w-[500px] h-[500px] bg-primary-fixed-dim/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
       <div className="fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-secondary-container/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-[28rem]">
         {/* Brand */}
         <div className="flex flex-col items-center text-center mb-lg">
           <div className="w-16 h-16 rounded-xl ai-gradient-bg flex items-center justify-center shadow-lg shadow-primary/30 mb-md">
