@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CareerAI Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="glass-panel">
+    
+    <header class="header">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        <h1>CareerAI</h1>
+      </div>
+      <div class="status-indicator online" title="Connected to Backend"></div>
+    </header>
+
+    <main class="content">
+      
+      <!-- Auth Section -->
+      <section id="auth-section" class="fade-in">
+        <div class="auth-header">
+          <h2 id="auth-title">Sign In</h2>
+          <p id="auth-subtitle">Login to connect your identity hub.</p>
+        </div>
+        
+        <form id="auth-form" class="auth-box">
+          <input type="text" id="auth-name" placeholder="Full Name" class="auth-input" style="display: none;" />
+          <input type="email" id="auth-email" placeholder="Email address" required class="auth-input" />
+          <input type="password" id="auth-password" placeholder="Password" required class="auth-input" />
+          <button type="submit" id="auth-submit" class="btn btn-primary">Sign In</button>
+        </form>
+        
+        <p class="auth-toggle">
+          <span id="auth-toggle-text">Don't have an account?</span> 
+          <a href="#" id="auth-toggle-btn">Sign Up</a>
+        </p>
+      </section>
+
+      <!-- Dashboard Section -->
+      <section id="dashboard-section" class="fade-in" style="display: none;">
+        <div class="user-card">
+          <div class="avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <h3 id="user-name">Loading Account...</h3>
+            <p>Profile Synced (100%)</p>
+          </div>
+        </div>
+
+        <div class="action-card">
+          <div class="icon-pulse">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </div>
+          <h4>Ready to Apply</h4>
+          <p>We are ready to detect application forms on this page.</p>
+          <button id="scan-forms-btn" class="btn btn-gradient">
+            ✨ Autofill Page
+          </button>
+        </div>
+
+        <div class="links" style="display: flex; flex-direction: column; gap: 8px;">
+          <a href="#" id="dashboard-link" target="_blank" class="dashboard-link">Open Full Web Dashboard ↗</a>
+          <button id="ext-logout-btn" class="dashboard-link" style="color: #ef4444; border: none; background: none; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Log Out Identity Session</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

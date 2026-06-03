@@ -1,0 +1,172 @@
+/* CareerAI extension popup — Material 3 light theme (no Tailwind; MV3-safe plain CSS) */
+:root {
+  --primary: #3525cd;
+  --primary-container: #4f46e5;
+  --on-primary-container: #dad7ff;
+  --secondary: #00687a;
+  --secondary-container: #57dffe;
+  --surface: #f8f9ff;
+  --surface-container-low: #eff4ff;
+  --surface-container: #e5eeff;
+  --surface-container-high: #dce9ff;
+  --on-surface: #0b1c30;
+  --on-surface-variant: #464555;
+  --outline-variant: #c7c4d8;
+  --gradient: linear-gradient(135deg, #3525cd 0%, #00687a 100%);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 380px;
+  min-height: 520px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--on-surface);
+  background: var(--surface);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(53, 37, 205, 0.12) 0px, transparent 55%),
+    radial-gradient(at 100% 0%, rgba(87, 223, 254, 0.14) 0px, transparent 55%);
+  overflow: hidden;
+}
+
+.glass-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  padding: 18px;
+  position: relative;
+}
+
+/* Brand uses Geist if available, else Inter */
+.logo h1, #auth-section h2, .action-card h4, .user-info h3 { font-family: 'Geist', 'Inter', sans-serif; }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(199, 196, 216, 0.4);
+}
+
+.logo { display: flex; align-items: center; gap: 10px; }
+
+/* The inline SVG logo mark sits in a primary-container chip */
+.logo svg {
+  width: 20px; height: 20px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--primary-container);
+  color: #fff;
+  box-sizing: content-box;
+}
+
+.logo h1 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+}
+
+.status-indicator {
+  position: relative;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+.status-indicator.online { background-color: var(--secondary); }
+.status-indicator.online::after {
+  content: ""; position: absolute; inset: 0;
+  border-radius: 50%; background: var(--secondary-container);
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+
+.content { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; }
+
+.fade-in { animation: fadeIn 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Auth ── */
+#auth-section { text-align: center; margin-top: 8px; }
+.hero-image {
+  width: 72px; height: 72px; margin: 0 auto 18px;
+  border-radius: 18px; display: flex; align-items: center; justify-content: center;
+  background: var(--gradient);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(53, 37, 205, 0.3);
+}
+.auth-header { text-align: center; margin-bottom: 18px; }
+#auth-section h2 { font-size: 1.5rem; font-weight: 700; margin: 0 0 6px; color: var(--on-surface); }
+#auth-section p { color: var(--on-surface-variant); font-size: 0.9rem; line-height: 1.5; margin: 0 0 20px; }
+
+.auth-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.auth-input {
+  width: 100%; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid var(--outline-variant); background: var(--surface-container-low);
+  color: var(--on-surface); font-family: inherit; font-size: 14px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.auth-input::placeholder { color: #8b8a99; }
+.auth-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(53, 37, 205, 0.12); }
+
+.auth-toggle { text-align: center; font-size: 13px; color: var(--on-surface-variant); }
+.auth-toggle a { color: var(--primary); text-decoration: none; font-weight: 600; margin-left: 5px; cursor: pointer; }
+.auth-toggle a:hover { color: var(--secondary); }
+
+/* ── Buttons ── */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
+  cursor: pointer; border: none; transition: all 0.2s ease; font-family: 'Geist', inherit;
+}
+.btn-primary { background: var(--surface-container); color: var(--on-surface); }
+.btn-primary:hover { background: var(--surface-container-high); }
+.btn-gradient { background: var(--gradient); color: #fff; box-shadow: 0 4px 14px rgba(53, 37, 205, 0.3); }
+.btn-gradient:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(87, 223, 254, 0.5); }
+.google-icon { width: 18px; height: 18px; }
+
+/* ── Dashboard ── */
+#dashboard-section { display: flex; flex-direction: column; gap: 14px; }
+
+.user-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface-container-low); border: 1px solid var(--outline-variant);
+  padding: 14px; border-radius: 16px;
+}
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: var(--gradient); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.05rem;
+}
+.user-info h3 { margin: 0 0 3px; font-size: 1rem; font-weight: 700; color: var(--on-surface); }
+.user-info p { margin: 0; font-size: 0.78rem; color: var(--secondary); font-weight: 600; }
+
+.action-card {
+  background: var(--surface-container-low); border: 1px solid var(--outline-variant);
+  padding: 22px 18px; border-radius: 16px; text-align: center;
+}
+.icon-pulse {
+  width: 54px; height: 54px; border-radius: 50%; margin: 0 auto 14px;
+  background: var(--gradient); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 0 rgba(53, 37, 205, 0.4); animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(53, 37, 205, 0.35); }
+  70% { box-shadow: 0 0 0 14px rgba(53, 37, 205, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(53, 37, 205, 0); }
+}
+.action-card h4 { margin: 0 0 6px; font-size: 1.05rem; font-weight: 700; color: var(--on-surface); }
+.action-card p { color: var(--on-surface-variant); font-size: 0.88rem; margin: 0 0 18px; line-height: 1.4; }
+
+.links { text-align: center; margin-top: 16px; padding-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
+.dashboard-link {
+  color: var(--on-surface-variant); text-decoration: none; font-size: 0.85rem; font-weight: 600;
+  padding: 6px; border-radius: 8px; transition: color 0.2s, background 0.2s;
+}
+.dashboard-link:hover { color: var(--primary); background: var(--surface-container); }

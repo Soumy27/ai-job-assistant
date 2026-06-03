@@ -1,0 +1,28 @@
+# Render Blueprint for the CareerAI backend.
+# In Render: New + → "Blueprint" → connect this repo → it reads this file.
+# You'll be prompted to fill the env vars marked `sync: false`.
+services:
+  - type: web
+    name: careerai-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true        # Render generates a strong random secret
+      - key: DATABASE_URL
+        sync: false                # paste your Neon connection string
+      - key: GEMINI_API_KEY
+        sync: false                # optional (app falls back without it)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false                # https://careerai-backend.onrender.com/api/gmail/callback
+      - key: FRONTEND_URL
+        sync: false                # your Vercel URL, e.g. https://careerai.vercel.app
+    # Render injects PORT automatically; server.js already uses process.env.PORT.

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "AI Job Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered browser extension to simplify and automate job applications.",
+  "permissions": ["activeTab", "storage", "notifications", "scripting", "tabs"],
+  "host_permissions": ["*://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["config.js", "content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
