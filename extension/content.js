@@ -40,8 +40,23 @@ if (!window.location.href.includes(WEB_HOST)) {
 
   const STYLE_ID = 'jobai-styles';
   let formDetected = false;
+  let dismissed = false;   // per-page: set when user clicks ✕
+  let barDisabled = false; // global: persistent off-switch from the popup toggle
   let floatingBar = null;
   let lastMatchData = null;
+
+  // Load the persistent on/off setting, and react live when it's toggled in the popup.
+  chrome.storage.local.get(['autofillBarDisabled'], (r) => {
+    barDisabled = !!r.autofillBarDisabled;
+    if (barDisabled) { removeFloatingBar(); formDetected = false; }
+  });
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.autofillBarDisabled) {
+      barDisabled = !!changes.autofillBarDisabled.newValue;
+      if (barDisabled) { removeFloatingBar(); formDetected = false; }
+      else { dismissed = false; detectForms(); }   // re-enable: allow it to show again
+    }
+  });
 
   // ── Inject global styles ──
   function injectStyles() {
@@ -133,7 +148,7 @@ if (!window.location.href.includes(WEB_HOST)) {
     const hasForm = fields.length >= 3;
     const isJobPage = isJobApplicationPage();
 
-    if (hasForm && !formDetected) {
+    if (hasForm && !formDetected && !dismissed && !barDisabled) {
       formDetected = true;
       injectStyles();
       showFloatingBar(fields.length, isJobPage);
@@ -169,7 +184,12 @@ if (!window.location.href.includes(WEB_HOST)) {
     document.body.appendChild(floatingBar);
 
     document.getElementById('jobai-autofill-btn').addEventListener('click', triggerAutofill);
-    document.getElementById('jobai-dismiss-btn').addEventListener('click', () => { removeFloatingBar(); formDetected = false; });
+    document.getElementById('jobai-dismiss-btn').addEventListener('click', () => {
+      removeFloatingBar();
+      formDetected = false;
+      dismissed = true;   // don't let the MutationObserver bring it back on this page
+      chrome.runtime.sendMessage({ action: 'FORM_CLEARED' });
+    });
   }
 
   function removeFloatingBar() {

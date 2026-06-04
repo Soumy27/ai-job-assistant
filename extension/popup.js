@@ -7,6 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashboardLink = document.getElementById('dashboard-link');
   if (dashboardLink) dashboardLink.href = WEB_BASE;
 
+  // ── Persistent "autofill bar on job sites" toggle ──
+  const barToggle = document.getElementById('bar-toggle');
+  if (barToggle) {
+    chrome.storage.local.get(['autofillBarDisabled'], ({ autofillBarDisabled }) => {
+      barToggle.checked = !autofillBarDisabled;   // checked = enabled
+    });
+    barToggle.addEventListener('change', () => {
+      // content.js listens for this change and shows/hides the bar live
+      chrome.storage.local.set({ autofillBarDisabled: !barToggle.checked });
+    });
+  }
+
   // ── Helper: load user name from backend ──
   function loadUserName(token, userid) {
     fetch(`${API_BASE}/api/profile`, {
