@@ -24,6 +24,22 @@ function gmailConfigured() {
   return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REDIRECT_URI);
 }
 
+// ── 0. Is Gmail available here, and has this user connected it? ──
+// The UI asks before deciding whether to offer Connect, Scan, or an honest
+// "unavailable" line, so no one is shown a control that cannot work.
+router.get('/status', authMiddleware, async (req, res) => {
+  const configured = gmailConfigured();
+  let connected = false;
+  if (configured) {
+    try {
+      connected = Boolean(await getGoogleToken(req.user.id));
+    } catch (err) {
+      console.error('Gmail status lookup failed:', err.message);
+    }
+  }
+  res.json({ configured, connected });
+});
+
 // ── 1. Start the flow: return the Google consent URL ──
 router.get('/auth-url', authMiddleware, (req, res) => {
   if (!gmailConfigured()) {
@@ -86,7 +102,27 @@ router.post('/scan', authMiddleware, async (req, res) => {
 
     const client = oauthClient();
     client.setCredentials({ refresh_token: refreshToken });
-    const { token: accessToken } = await client.getAccessToken();   // refresh → fresh access token
+
+    let accessToken;
+    try {
+      ({ token: accessToken } = await client.getAccessToken());   // refresh → fresh access token
+    } catch (err) {
+      // A stored refresh token stops working when the user revokes access, or
+      // — the common case — because the OAuth app is still in "Testing"
+      // publishing status, where Google expires refresh tokens after 7 days.
+      // Drop the dead token so the UI can offer a clean reconnect instead of
+      // failing this way every time from now on.
+      const reason = String(err?.response?.data?.error || err?.message || '');
+      if (/invalid_grant|unauthorized_client|invalid_request/i.test(reason)) {
+        await saveGoogleToken(req.user.id, null);
+        return res.status(401).json({
+          error: 'Your Gmail connection expired. Connect Gmail again to keep scanning.',
+          connected: false,
+          needsReconnect: true,
+        });
+      }
+      throw err;
+    }
     if (!accessToken) return res.status(401).json({ error: 'Could not obtain Gmail access token', connected: false });
 
     // Gmail search syntax: job-related keywords, last 30 days.

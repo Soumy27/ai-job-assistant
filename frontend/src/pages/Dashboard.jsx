@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { authFetch, API_BASE } from '../utils/auth';
+import { authFetch } from '../utils/auth';
 import Icon from '../components/Icon';
 
 /**
@@ -59,6 +59,7 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
 
   const [gmailConfigured, setGmailConfigured] = useState(null); // null = unknown
+  const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailMsgs, setGmailMsgs] = useState([]);
   const [gmailScanning, setGmailScanning] = useState(false);
   const [gmailNote, setGmailNote] = useState('');
@@ -91,9 +92,12 @@ export default function Dashboard() {
   // Ask the server which integrations it actually has, so we never offer a
   // control that is guaranteed to fail.
   useEffect(() => {
-    fetch(`${API_BASE}/api/health`)
+    authFetch('/api/gmail/status')
       .then((r) => r.json())
-      .then((d) => setGmailConfigured(Boolean(d?.integrations?.gmail)))
+      .then((d) => {
+        setGmailConfigured(Boolean(d?.configured));
+        setGmailConnected(Boolean(d?.connected));
+      })
       .catch(() => setGmailConfigured(false));
   }, []);
 
@@ -166,9 +170,17 @@ export default function Dashboard() {
     try {
       const res = await authFetch('/api/gmail/scan', { method: 'POST', body: JSON.stringify({}) });
       const data = await res.json();
-      if (res.status === 400 && data.connected === false) {
+      if (data.needsReconnect) {
+        // The stored refresh token died (revoked, or expired because the
+        // OAuth app is still in Testing). Send them back to Connect.
+        setGmailConnected(false);
+        setGmailMsgs([]);
+        setGmailNote(data.error);
+      } else if (res.status === 400 && data.connected === false) {
+        setGmailConnected(false);
         setGmailNote('Gmail is not connected yet.');
       } else if (res.ok) {
+        setGmailConnected(true);
         setGmailMsgs(data.opportunities || []);
         setGmailNote(
           data.count === 0
@@ -309,7 +321,7 @@ export default function Dashboard() {
         <section aria-labelledby="mail-h" className="panel">
           <div className="flex items-baseline justify-between border-b border-rule px-5 py-3">
             <h2 id="mail-h" className="text-section">Inbox scan</h2>
-            {gmailConfigured && (
+            {gmailConfigured && gmailConnected && (
               <button
                 type="button"
                 className="btn btn-quiet h-7 px-2 text-small"
@@ -330,6 +342,11 @@ export default function Dashboard() {
               <p className="text-body text-muted">
                 Mail scanning is turned off on this server, so there is nothing to connect to yet.
                 Track applications by hand in the meantime.
+              </p>
+            ) : gmailConnected ? (
+              <p className="text-body text-muted">
+                Connected. Scanning reads the last 30 days of mail, read-only, and sorts job
+                replies by what they are.
               </p>
             ) : (
               <>
