@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { login, API_BASE } from '../utils/auth';
 
-const Icon = ({ name, className = '', fill = false }) => (
-  <span className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`} aria-hidden="true">{name}</span>
-);
-
-const Login = () => {
+export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,14 +25,14 @@ const Login = () => {
       if (!isLogin) {
         setIsLogin(true);
         setPassword('');
-        setMessage({ text: 'Account created! Please sign in with your credentials.', type: 'success' });
+        setMessage({ text: 'Account created. Sign in to continue.', type: 'success' });
         return;
       }
       login(data.token, data.userid);
       window.location.href = '/';
     } catch (err) {
       setMessage({
-        text: err.message === 'Failed to fetch' ? 'Backend server is unreachable.' : err.message,
+        text: err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message,
         type: 'error',
       });
     } finally {
@@ -44,87 +40,88 @@ const Login = () => {
     }
   };
 
-  const switchMode = () => {
-    setIsLogin(!isLogin);
-    setMessage({ text: '', type: '' });
-  };
-
-  const inputClass =
-    'mt-xs w-full px-md py-sm rounded-lg border border-outline-variant/50 bg-surface-container-low text-on-surface font-body-md placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary focus:bg-surface transition-colors';
-  const labelClass = 'block font-label-md text-label-md text-on-surface-variant';
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-md relative overflow-hidden">
-      {/* Atmospheric accents */}
-      <div className="fixed -top-40 -left-40 w-[500px] h-[500px] bg-primary-fixed-dim/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
-      <div className="fixed -bottom-40 -right-40 w-[500px] h-[500px] bg-secondary-container/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-
-      <div className="w-full max-w-[28rem]">
-        {/* Brand */}
-        <div className="flex flex-col items-center text-center mb-lg">
-          <div className="w-16 h-16 rounded-xl ai-gradient-bg flex items-center justify-center shadow-lg shadow-primary/30 mb-md">
-            <Icon name="robot_2" fill className="text-on-primary text-[32px]" />
-          </div>
-          <h1 className="font-headline-xl text-headline-xl text-on-background tracking-tight">
-            {isLogin ? 'Welcome back' : 'Create your account'}
+    <div className="flex min-h-screen flex-col justify-center px-4 py-10">
+      <div className="mx-auto w-full max-w-[380px]">
+        <div className="mb-8">
+          <div className="text-section font-semibold tracking-tight">CareerAI</div>
+          <h1 className="mt-6 text-title tracking-tight">
+            {isLogin ? 'Sign in' : 'Create your account'}
           </h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">
-            Your AI-powered job application copilot.
+          <p className="mt-1 text-body text-muted">
+            Track every application from saved to offer.
           </p>
         </div>
 
-        {/* Card */}
-        <div className="glass-panel rounded-xl p-lg sm:p-xl">
-          {message.text && (
-            <div
-              className={`mb-md p-sm rounded-lg flex items-center gap-sm font-body-sm text-body-sm border ${
-                message.type === 'success'
-                  ? 'bg-secondary-container/20 text-on-secondary-container border-secondary/30'
-                  : 'bg-error-container/40 text-on-error-container border-error/20'
-              }`}
-            >
-              <Icon name={message.type === 'success' ? 'check_circle' : 'error'} fill className="text-[20px] shrink-0" />
-              {message.text}
+        <form onSubmit={handleSubmit} noValidate>
+          {!isLogin && (
+            <div className="mb-4">
+              <label className="block text-body font-medium" htmlFor="name">Name</label>
+              <input
+                id="name"
+                className="field mt-2"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                required
+              />
             </div>
           )}
 
-          <form className="space-y-md" onSubmit={handleSubmit}>
-            {!isLogin && (
-              <div>
-                <label className={labelClass}>Full Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required={!isLogin}
-                  className={inputClass} placeholder="John Doe" />
-              </div>
-            )}
-            <div>
-              <label className={labelClass}>Email address</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                className={inputClass} placeholder="hello@example.com" />
-            </div>
-            <div>
-              <label className={labelClass}>Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                className={inputClass} placeholder="••••••••" />
-            </div>
+          <div className="mb-4">
+            <label className="block text-body font-medium" htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              className="field mt-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+          </div>
 
-            <button type="submit" disabled={isLoading}
-              className="w-full flex justify-center items-center gap-sm py-md rounded-lg ai-button text-on-primary font-label-md text-label-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-              {isLoading
-                ? <span className="animate-pulse">Processing…</span>
-                : <>{isLogin ? 'Sign in' : 'Create account'} <Icon name="arrow_forward" className="text-[18px]" /></>}
-            </button>
-          </form>
+          <div className="mb-6">
+            <label className="block text-body font-medium" htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              className="field mt-2"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
+              required
+            />
+          </div>
 
-          <p className="mt-lg text-center font-body-sm text-body-sm text-on-surface-variant">
-            {isLogin ? "Don't have an account? " : 'Already registered? '}
-            <button onClick={switchMode} className="font-label-md text-label-md text-primary hover:text-secondary transition-colors cursor-pointer">
-              {isLogin ? 'Sign up for free' : 'Sign in'}
-            </button>
-          </p>
-        </div>
+          {message.text && (
+            <p
+              role={message.type === 'error' ? 'alert' : 'status'}
+              className={`mb-4 text-body ${message.type === 'error' ? 'text-negative' : 'text-positive'}`}
+            >
+              {message.text}
+            </p>
+          )}
+
+          <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+            {isLoading ? 'Working…' : isLogin ? 'Sign in' : 'Create account'}
+          </button>
+        </form>
+
+        <p className="mt-6 text-body text-muted">
+          {isLogin ? 'No account yet?' : 'Already have an account?'}{' '}
+          <button
+            type="button"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setMessage({ text: '', type: '' });
+            }}
+            className="cursor-pointer text-text underline underline-offset-2"
+          >
+            {isLogin ? 'Create one' : 'Sign in'}
+          </button>
+        </p>
       </div>
     </div>
   );
-};
-
-export default Login;
+}

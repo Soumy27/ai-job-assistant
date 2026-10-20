@@ -1,26 +1,20 @@
 <!doctype html>
-<html lang="en" class="light">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- CareerAI design system fonts -->
+    <meta name="description" content="Track every job application from saved to offer, parse your resume, and sort job mail automatically." />
+    <!-- Geist for text, Geist Mono for every figure: counts and amounts read
+         as a ledger's columns. Icons are inline SVG (src/components/Icon.jsx),
+         not a webfont — a missing glyph must fail loudly, not render as text. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <!-- Material Symbols is self-hosted (see index.css @font-face): the Google
-         Fonts CDN is blocked by default in Brave, which broke every icon. -->
-    <link
-      rel="preload"
-      href="/fonts/material-symbols-subset.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <title>CareerAI — AI Job Assistant</title>
+    <title>CareerAI — Job application tracker</title>
   </head>
   <body>
     <div id="root"></div>

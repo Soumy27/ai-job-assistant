@@ -1,116 +1,137 @@
-import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { logout } from '../utils/auth';
+import Icon from './Icon';
 
-// Material Symbols icon helper.
-const Icon = ({ name, className = '', fill = false }) => (
-  <span
-    className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`}
-    aria-hidden="true"
-  >
-    {name}
-  </span>
-);
+const navItems = [
+  { name: 'Overview', path: '/', icon: 'overview' },
+  { name: 'Resume', path: '/resume', icon: 'upload' },
+  { name: 'Profile', path: '/profile', icon: 'person' },
+];
 
-const Layout = () => {
+/**
+ * Shell: "Open plane".
+ * The sidebar sits on the page ground with no border and no fill of its own;
+ * there is no top bar on desktop. The active item is a neutral grey pill —
+ * not a brand colour, not a left bar.
+ */
+export default function Layout() {
   const location = useLocation();
-
-  const navItems = [
-    { name: 'Overview', path: '/', icon: 'dashboard' },
-    { name: 'Profile', path: '/profile', icon: 'person' },
-    { name: 'Resume AI', path: '/resume', icon: 'description' },
-  ];
+  const [navOpen, setNavOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
-    setTimeout(() => {
-      window.location.href = '/login';
-    }, 150);
+    window.location.href = '/login';
   };
 
-  return (
-    <div className="min-h-screen flex font-body-md text-on-background">
-      {/* Atmospheric background accent */}
-      <div className="fixed top-0 right-0 w-[800px] h-[600px] bg-gradient-to-bl from-primary-fixed-dim/30 via-surface-container-lowest/10 to-transparent rounded-bl-full pointer-events-none -z-10 mix-blend-multiply opacity-50"></div>
+  const currentName =
+    navItems.find((i) => i.path === location.pathname)?.name ?? 'Overview';
 
-      {/* Sidebar */}
-      <aside className="bg-surface h-screen w-64 fixed left-0 top-0 flex flex-col p-md border-r border-outline-variant/50 z-40">
-        {/* Brand */}
-        <div className="mb-xl flex items-center gap-sm px-sm pt-sm">
-          <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
-            <Icon name="robot_2" fill className="text-on-primary-container" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-headline-md text-headline-md font-black text-primary tracking-tight">CareerAI</span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant opacity-80">Pro Navigator</span>
-          </div>
-        </div>
-
-        {/* Nav links */}
-        <ul className="flex-1 flex flex-col gap-xs">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <li key={item.name}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center gap-md px-md py-sm rounded-lg transition-all duration-200 font-label-md text-label-md group ${
-                    isActive
-                      ? 'bg-primary-container text-on-primary-container'
-                      : 'text-on-surface-variant hover:bg-surface-container-high'
-                  }`}
-                >
-                  <Icon name={item.icon} fill={isActive} className="transition-transform group-hover:scale-110" />
+  const navList = (
+    <nav aria-label="Main">
+      <ul className="flex flex-col gap-[2px]">
+        {navItems.map((item) => (
+          <li key={item.path}>
+            <NavLink
+              to={item.path}
+              end={item.path === '/'}
+              onClick={() => setNavOpen(false)}
+              className={({ isActive }) =>
+                [
+                  'flex h-8 items-center gap-[10px] rounded-md px-[10px] text-body transition-colors',
+                  isActive
+                    ? 'bg-[#e9e9e9] text-text'
+                    : 'text-muted hover:bg-[#efefef] hover:text-text',
+                ].join(' ')
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    name={item.icon}
+                    className={isActive ? 'text-text' : 'text-muted'}
+                  />
                   {item.name}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                </>
+              )}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
 
-        {/* Pro CTA */}
-        <div className="mb-lg p-md rounded-xl bg-surface-container-low border border-outline-variant/30 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <Icon name="workspace_premium" fill className="text-primary mb-sm" />
-            <p className="font-label-sm text-label-sm text-on-surface mb-md">Unlock advanced AI interview prep.</p>
-            <button className="w-full py-2 px-4 ai-button text-on-primary rounded-lg font-label-md text-label-md shadow-sm">
-              Upgrade to Pro
+  const sidebarInner = (
+    <div className="flex h-full flex-col px-3 py-5">
+      {/* Scope: the product's name and whose pipeline this is. */}
+      <div className="mb-7 px-[10px]">
+        <div className="text-section font-semibold tracking-tight">CareerAI</div>
+        <div className="text-small text-muted">Job pipeline</div>
+      </div>
+
+      {navList}
+
+      <div className="mt-auto flex flex-col gap-[2px] pt-6">
+        <a
+          href="https://github.com/Soumy27/ai-job-assistant"
+          target="_blank"
+          rel="noreferrer"
+          className="flex h-8 items-center gap-[10px] rounded-md px-[10px] text-body text-muted transition-colors hover:bg-[#efefef] hover:text-text"
+        >
+          <Icon name="external" className="text-muted" />
+          Help
+        </a>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex h-8 cursor-pointer items-center gap-[10px] rounded-md px-[10px] text-body text-muted transition-colors hover:bg-[#efefef] hover:text-text"
+        >
+          <Icon name="logout" className="text-muted" />
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-ground text-text">
+      {/* Phone: the nav folds into a 48px bar with the screen's name. */}
+      <div className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border bg-ground px-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setNavOpen(true)}
+          className="-ml-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-[#efefef]"
+          aria-label="Open navigation"
+        >
+          <Icon name="menu" size={18} />
+        </button>
+        <span className="text-section font-medium">{currentName}</span>
+      </div>
+
+      {navOpen && (
+        <div className="fixed inset-0 z-50 bg-ground lg:hidden">
+          <div className="flex h-12 items-center justify-between border-b border-border px-4">
+            <span className="text-section font-semibold tracking-tight">CareerAI</span>
+            <button
+              type="button"
+              onClick={() => setNavOpen(false)}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-[#efefef]"
+              aria-label="Close navigation"
+            >
+              <Icon name="close" size={18} />
             </button>
           </div>
+          <div className="h-[calc(100%-48px)]">{sidebarInner}</div>
         </div>
+      )}
 
-        {/* Footer */}
-        <ul className="flex flex-col gap-xs pt-sm border-t border-outline-variant/50">
-          <li>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all font-label-md text-label-md"
-            >
-              <Icon name="help" />
-              Help Center
-            </a>
-          </li>
-          <li>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-md px-md py-sm text-error hover:bg-error-container hover:text-on-error-container rounded-lg transition-all font-label-md text-label-md cursor-pointer"
-            >
-              <Icon name="logout" />
-              Logout
-            </button>
-          </li>
-        </ul>
+      <aside className="fixed left-0 top-0 hidden h-screen w-64 lg:block">
+        {sidebarInner}
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 ml-64 p-margin-desktop">
+      <main className="px-4 py-6 lg:ml-64 lg:px-8 lg:py-8">
         <Outlet />
       </main>
     </div>
   );
-};
-
-export default Layout;
+}

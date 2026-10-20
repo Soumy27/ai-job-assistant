@@ -31,3 +31,6 @@ node_modules.nosync/
 
 # ── Personal docs kept in the working folder, not for the public repo ──
 /*.pdf
+
+# Working files from the design skill (direction sheet, inspector output)
+.taste-skill/

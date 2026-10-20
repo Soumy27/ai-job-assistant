@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { authFetch } from '../utils/auth';
 import { Link } from 'react-router-dom';
+import { authFetch, API_BASE } from '../utils/auth';
+import Icon from '../components/Icon';
 
-const Icon = ({ name, className = '', fill = false }) => (
-  <span className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`} aria-hidden="true">{name}</span>
-);
+/**
+ * Overview — the screen's question: "Where do my applications stand, and
+ * which one needs me today?"
+ *
+ * The pipeline answers it, so the pipeline is the biggest block: one divided
+ * ledger strip rather than four KPI tiles, counts set as ledger columns, and
+ * the single chart hue on the stage actually holding the most applications.
+ */
 
-// Turn an ISO timestamp into a short "2d ago" style label.
+// The product's own stages, in the order an application moves through them.
+const STAGES = ['Saved', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
+
 function timeAgo(iso) {
-  if (!iso) return '';
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'Just now';
+  if (!iso) return '—';
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -20,116 +27,107 @@ function timeAgo(iso) {
   return `${Math.floor(days / 7)}w ago`;
 }
 
-const STATUS_STYLES = {
-  Saved: 'bg-tertiary-fixed text-on-tertiary-fixed',
-  Applied: 'bg-surface-container text-primary border border-primary/20',
-  Interviewing: 'bg-secondary-container/50 text-on-secondary-container',
-  Offer: 'bg-secondary-container text-on-secondary-container',
-  Rejected: 'bg-surface-container-high text-on-surface-variant',
+// Pale tint, dark ink of the same hue. Only the stages that mean something
+// carry a hue; everything settled or neutral stays grey.
+const STAGE_PILL = {
+  Saved: 'bg-pill-neutral-bg text-pill-neutral-ink',
+  Applied: 'bg-pill-neutral-bg text-pill-neutral-ink',
+  Interviewing: 'bg-pill-warning-bg text-pill-warning-ink',
+  Offer: 'bg-pill-positive-bg text-pill-positive-ink',
+  Rejected: 'bg-pill-negative-bg text-pill-negative-ink',
 };
 
-// Colour the Gmail email-classification badges by type.
-const CLASSIFICATION_STYLES = {
-  'Interview Invite': 'bg-secondary-container/50 text-on-secondary-container',
-  'Offer': 'bg-secondary text-on-secondary',
-  'Rejection': 'bg-surface-container-high text-on-surface-variant',
-  'Application Received': 'bg-primary/10 text-primary',
-  'Job Alert': 'bg-tertiary-fixed text-on-tertiary-fixed',
-  'Job-related': 'bg-surface-container text-on-surface-variant',
+const MAIL_PILL = {
+  'Interview Invite': 'bg-pill-warning-bg text-pill-warning-ink',
+  Offer: 'bg-pill-positive-bg text-pill-positive-ink',
+  Rejection: 'bg-pill-negative-bg text-pill-negative-ink',
+  'Application Received': 'bg-pill-neutral-bg text-pill-neutral-ink',
+  'Job Alert': 'bg-pill-neutral-bg text-pill-neutral-ink',
+  'Job-related': 'bg-pill-neutral-bg text-pill-neutral-ink',
 };
 
-const Dashboard = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [userName, setUserName] = useState('User');
-  const [profileComplete, setProfileComplete] = useState(100);
+export default function Dashboard() {
   const [apps, setApps] = useState([]);
   const [loadingApps, setLoadingApps] = useState(true);
+  const [appsError, setAppsError] = useState('');
 
+  const [profileComplete, setProfileComplete] = useState(100);
+
+  const [showAdd, setShowAdd] = useState(false);
   const [newCompany, setNewCompany] = useState('');
   const [newRole, setNewRole] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [gmailConfigured, setGmailConfigured] = useState(null); // null = unknown
   const [gmailMsgs, setGmailMsgs] = useState([]);
   const [gmailScanning, setGmailScanning] = useState(false);
   const [gmailNote, setGmailNote] = useState('');
 
   useEffect(() => {
     authFetch('/api/profile')
-      .then(res => res.json())
-      .then(data => {
-        if (data.personalInfo?.firstName) setUserName(data.personalInfo.firstName);
+      .then((r) => r.json())
+      .then((data) => {
         const fields = [
           data.personalInfo?.firstName, data.personalInfo?.lastName,
-          data.personalInfo?.email, data.personalInfo?.phone, data.personalInfo?.location,
-          data.academicInfo?.college, data.academicInfo?.degree,
-          data.professionalInfo?.skills, data.professionalInfo?.currentRole,
-          data.bio,
+          data.personalInfo?.email, data.personalInfo?.phone,
+          data.personalInfo?.location, data.academicInfo?.college,
+          data.academicInfo?.degree, data.professionalInfo?.skills,
+          data.professionalInfo?.currentRole, data.bio,
         ];
-        const filled = fields.filter(f => f && f.trim()).length;
+        const filled = fields.filter((f) => f && String(f).trim()).length;
         setProfileComplete(Math.round((filled / fields.length) * 100));
       })
-      .catch(err => console.error('Failed to load profile', err));
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     authFetch('/api/applications')
-      .then(res => res.json())
-      .then(data => setApps(data.applications || []))
-      .catch(err => console.error('Failed to load applications', err))
+      .then((r) => r.json())
+      .then((data) => setApps(data.applications || []))
+      .catch(() => setAppsError('Could not load your applications.'))
       .finally(() => setLoadingApps(false));
   }, []);
 
-  const countBy = (status) => apps.filter(a => a.status === status).length;
-  const stats = [
-    { t: 'Applied', v: countBy('Applied'), icon: 'send', tint: 'bg-surface-container-high text-primary' },
-    { t: 'Interviewing', v: countBy('Interviewing'), icon: 'event_upcoming', tint: 'bg-secondary-container/30 text-secondary' },
-    { t: 'Offers', v: countBy('Offer'), icon: 'check_circle', tint: 'bg-tertiary-fixed text-on-tertiary-fixed' },
-    { t: 'Total', v: apps.length, icon: 'work_history', tint: 'bg-primary/10 text-primary' },
-  ];
+  // Ask the server which integrations it actually has, so we never offer a
+  // control that is guaranteed to fail.
+  useEffect(() => {
+    fetch(`${API_BASE}/api/health`)
+      .then((r) => r.json())
+      .then((d) => setGmailConfigured(Boolean(d?.integrations?.gmail)))
+      .catch(() => setGmailConfigured(false));
+  }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const g = params.get('gmail');
+    const g = new URLSearchParams(window.location.search).get('gmail');
     if (g === 'connected') {
-      setGmailNote('✅ Gmail connected! Click “Scan Inbox” to find job emails.');
+      setGmailNote('Gmail connected. Scan your inbox to find application updates.');
       window.history.replaceState({}, '', '/');
     } else if (g === 'error') {
-      setGmailNote('❌ Gmail connection failed. Please try again.');
+      setGmailNote('Gmail connection failed. Try connecting again.');
       window.history.replaceState({}, '', '/');
     }
   }, []);
 
-  const handleConnectGmail = async () => {
-    try {
-      const res = await authFetch('/api/gmail/auth-url');
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else setGmailNote(data.error || 'Could not start Gmail connection.');
-    } catch {
-      setGmailNote('Backend unreachable.');
-    }
-  };
+  const countBy = (s) => apps.filter((a) => a.status === s).length;
+  const counts = STAGES.map((s) => ({ stage: s, n: countBy(s) }));
 
-  const handleScanGmail = async () => {
-    setGmailScanning(true);
-    setGmailNote('');
-    try {
-      const res = await authFetch('/api/gmail/scan', { method: 'POST', body: JSON.stringify({}) });
-      const data = await res.json();
-      if (res.status === 400 && data.connected === false) {
-        setGmailNote('Gmail isn’t connected yet — connect it first.');
-      } else if (res.ok) {
-        setGmailMsgs(data.opportunities || []);
-        setGmailNote(`Found ${data.count} job-related email(s).`);
-      } else {
-        setGmailNote(data.error || 'Scan failed.');
-      }
-    } catch {
-      setGmailNote('Backend unreachable.');
-    } finally {
-      setGmailScanning(false);
-    }
-  };
+  // The one hue marks the stage holding the most applications — the live part
+  // of the pipeline. With nothing in it yet, nothing is marked.
+  const peak = counts.reduce((best, c) => (c.n > best.n ? c : best), { stage: null, n: 0 });
+  const liveStage = peak.n > 0 ? peak.stage : null;
+
+  const open = counts
+    .filter((c) => c.stage !== 'Rejected')
+    .reduce((sum, c) => sum + c.n, 0);
+
+  // The finding: the one fact that most needs attention today.
+  const interviewing = countBy('Interviewing');
+  const offers = countBy('Offer');
+  let finding;
+  if (apps.length === 0) finding = 'Nothing tracked yet. Add the first application to start the pipeline.';
+  else if (offers > 0) finding = `${offers} offer${offers > 1 ? 's' : ''} waiting on your decision.`;
+  else if (interviewing > 0) finding = `${interviewing} application${interviewing > 1 ? 's' : ''} at interview stage.`;
+  else finding = `${open} application${open === 1 ? '' : 's'} still open, none at interview yet.`;
 
   const handleAdd = async () => {
     if (!newCompany.trim() || !newRole.trim()) return;
@@ -141,151 +139,267 @@ const Dashboard = () => {
       });
       const data = await res.json();
       if (res.ok && data.application) {
-        setApps(prev => [data.application, ...prev]);
+        setApps((prev) => [data.application, ...prev]);
         setNewCompany('');
         setNewRole('');
-        setShowModal(false);
+        setShowAdd(false);
       }
-    } catch (err) {
-      console.error('Failed to add application', err);
     } finally {
       setSaving(false);
     }
   };
 
+  const handleConnectGmail = async () => {
+    try {
+      const res = await authFetch('/api/gmail/auth-url');
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else setGmailNote(data.error || 'Could not start the Gmail connection.');
+    } catch {
+      setGmailNote('Could not reach the server.');
+    }
+  };
+
+  const handleScanGmail = async () => {
+    setGmailScanning(true);
+    setGmailNote('');
+    try {
+      const res = await authFetch('/api/gmail/scan', { method: 'POST', body: JSON.stringify({}) });
+      const data = await res.json();
+      if (res.status === 400 && data.connected === false) {
+        setGmailNote('Gmail is not connected yet.');
+      } else if (res.ok) {
+        setGmailMsgs(data.opportunities || []);
+        setGmailNote(
+          data.count === 0
+            ? 'No job-related mail in the last 30 days.'
+            : `${data.count} job-related email${data.count === 1 ? '' : 's'} in the last 30 days.`
+        );
+      } else {
+        setGmailNote(data.error || 'The scan failed.');
+      }
+    } catch {
+      setGmailNote('Could not reach the server.');
+    } finally {
+      setGmailScanning(false);
+    }
+  };
+
+  const recent = apps.slice(0, 6);
+
   return (
-    <div className="max-w-6xl">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-md mb-xl">
+    <div className="mx-auto max-w-[1100px]">
+      {/* Title row: a noun title, the finding under it, the main job at the right. */}
+      <header className="mb-7 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-headline-xl text-headline-xl text-on-background tracking-tight">Welcome back, {userName} 👋</h1>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Your AI-powered application pipeline is active.</p>
+          <h1 className="text-title tracking-tight">Overview</h1>
+          <p className="mt-1 text-body text-muted">{finding}</p>
         </div>
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-sm px-lg py-sm ai-button text-on-primary rounded-lg font-label-md text-label-md shadow-sm">
-          <Icon name="add" className="text-[18px]" /> Add Application
+        <button type="button" className="btn btn-primary" onClick={() => setShowAdd(true)}>
+          <Icon name="plus" />
+          Add application
         </button>
       </header>
 
-      {/* Profile completeness prompt */}
       {profileComplete < 80 && (
-        <div className="mb-lg p-md rounded-xl bg-tertiary-fixed/40 border border-tertiary-fixed-dim/50 flex items-center justify-between gap-md">
-          <div className="flex items-center gap-md">
-            <div className="w-11 h-11 rounded-lg bg-tertiary-fixed flex items-center justify-center shrink-0">
-              <Icon name="info" fill className="text-on-tertiary-fixed" />
-            </div>
-            <div>
-              <h3 className="font-label-md text-label-md text-on-tertiary-fixed">Complete your profile ({profileComplete}%)</h3>
-              <p className="font-body-sm text-body-sm text-on-tertiary-fixed-variant">Fill all fields for the best autofill accuracy.</p>
-            </div>
-          </div>
-          <Link to="/profile" className="flex items-center gap-xs px-md py-sm rounded-lg bg-tertiary text-on-tertiary font-label-md text-label-md hover:opacity-90 transition-opacity shrink-0">
-            Complete <Icon name="arrow_forward" className="text-[16px]" />
-          </Link>
-        </div>
+        <Link
+          to="/profile"
+          className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-card border border-border bg-surface px-4 py-3 transition-colors hover:bg-[#fafafa]"
+        >
+          <span className="flex items-start gap-[10px] text-body">
+            <Icon name="info" className="mt-[3px] shrink-0 text-muted" />
+            <span>
+              Your profile is <span className="fig">{profileComplete}%</span> complete. Autofill
+              works better when it is full.
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-body text-muted">
+            Complete <Icon name="arrowRight" />
+          </span>
+        </Link>
       )}
 
-      {/* Stat bento */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-gutter mb-lg">
-        {stats.map(stat => (
-          <div key={stat.t} className="bg-surface rounded-xl border border-outline-variant/30 p-lg hover:shadow-[0_4px_12px_rgba(53,37,205,0.05)] transition-shadow">
-            <div className="flex justify-between items-start mb-lg">
-              <span className="font-label-md text-label-md text-on-surface-variant">{stat.t}</span>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stat.tint}`}>
-                <Icon name={stat.icon} className="text-[18px]" />
-              </div>
-            </div>
-            <span className="font-headline-xl text-headline-xl text-on-background leading-none">{stat.v}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent Applications */}
-      <div className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden mb-lg">
-        <div className="p-lg border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-lowest">
-          <h2 className="font-headline-md text-headline-md text-on-background">Recent Applications</h2>
-          <span className="font-label-sm text-label-sm text-primary bg-surface-container px-sm py-xs rounded-full">Auto-tracking ON</span>
+      {/* The pipeline: one container divided by hairlines, not five cards. */}
+      <section aria-labelledby="pipeline-h" className="panel mb-3">
+        <div className="flex items-baseline justify-between border-b border-rule px-5 py-3">
+          <h2 id="pipeline-h" className="text-section">Pipeline</h2>
+          <span className="text-small text-muted">
+            <span className="fig">{open}</span> open · <span className="fig">{apps.length}</span> tracked
+          </span>
         </div>
-        {loadingApps ? (
-          <div className="p-2xl text-center font-body-sm text-body-sm text-on-surface-variant">Loading applications…</div>
-        ) : apps.length === 0 ? (
-          <div className="p-2xl text-center font-body-sm text-body-sm text-on-surface-variant">No applications yet. Click “Add Application” to start tracking.</div>
-        ) : (
-          <div className="divide-y divide-outline-variant/20">
-            {apps.map(app => (
-              <div key={app.id} className="p-lg hover:bg-surface-container-low transition-colors flex items-center justify-between gap-md">
-                <div>
-                  <h3 className="font-label-md text-label-md text-on-surface">{app.role}</h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">{app.company}</p>
-                </div>
-                <div className="flex items-center gap-md shrink-0">
-                  <span className={`px-sm py-xs rounded-full font-label-sm text-label-sm ${STATUS_STYLES[app.status] || STATUS_STYLES.Applied}`}>{app.status}</span>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">{timeAgo(app.createdAt)}</span>
-                </div>
+        {/* One column on a phone, five across from sm: five stages never
+            divide into two or three columns without leaving an orphan cell. */}
+        <div className="grid grid-cols-1 divide-y divide-rule sm:grid-cols-5 sm:divide-x sm:divide-y-0">
+          {counts.map(({ stage, n }) => (
+            <div
+              key={stage}
+              className="flex items-baseline justify-between px-5 py-3 sm:block sm:py-4"
+            >
+              <div className="text-small text-muted">{stage}</div>
+              <div
+                className={[
+                  'fig text-kpi sm:mt-1',
+                  n === 0 ? 'text-muted' : stage === liveStage ? 'text-chart-3' : 'text-text',
+                ].join(' ')}
+              >
+                {n}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Gmail Job Tracker */}
-      <div className="bg-surface rounded-xl border border-outline-variant/30 overflow-hidden">
-        <div className="p-lg border-b border-outline-variant/30 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-md bg-surface-container-lowest">
-          <div className="flex items-center gap-sm">
-            <div className="w-11 h-11 rounded-lg bg-error-container/40 flex items-center justify-center shrink-0">
-              <Icon name="mail" className="text-error" />
             </div>
-            <div>
-              <h2 className="font-headline-md text-headline-md text-on-background">Gmail Job Tracker</h2>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">Find application updates in your inbox (read-only).</p>
-            </div>
-          </div>
-          <div className="flex gap-sm">
-            <button onClick={handleConnectGmail}
-              className="px-md py-sm rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors">
-              Connect Gmail
-            </button>
-            <button onClick={handleScanGmail} disabled={gmailScanning}
-              className="flex items-center gap-xs px-md py-sm rounded-lg ai-button text-on-primary font-label-md text-label-md disabled:opacity-50">
-              <Icon name="refresh" className={`text-[18px] ${gmailScanning ? 'animate-spin' : ''}`} /> {gmailScanning ? 'Scanning…' : 'Scan Inbox'}
-            </button>
-          </div>
+          ))}
         </div>
-        {gmailNote && <div className="px-lg py-sm font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low">{gmailNote}</div>}
-        {gmailMsgs.length > 0 && (
-          <div className="divide-y divide-outline-variant/20">
-            {gmailMsgs.map(m => (
-              <div key={m.id} className="p-lg hover:bg-surface-container-low transition-colors">
-                <div className="flex items-center justify-between gap-md mb-xs">
-                  <h3 className="font-label-md text-label-md text-on-surface truncate">{m.subject || '(no subject)'}</h3>
-                  <span className={`shrink-0 px-sm py-xs rounded-full font-label-sm text-label-sm ${CLASSIFICATION_STYLES[m.classification] || CLASSIFICATION_STYLES['Job-related']}`}>{m.classification}</span>
-                </div>
-                <p className="font-label-sm text-label-sm text-on-surface-variant mb-xs truncate">{m.from}</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">{m.snippet}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </section>
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-on-background/40 backdrop-blur-sm flex items-center justify-center z-50 p-md">
-          <div className="bg-surface rounded-xl p-lg w-full max-w-[28rem] shadow-2xl border border-outline-variant/30">
-            <h3 className="font-headline-md text-headline-md text-on-background mb-xs">Add Application</h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mb-md">Manually track a job you applied for elsewhere.</p>
-            <input type="text" value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder="Company Name"
-              className="w-full mb-md px-md py-sm rounded-lg bg-surface-container-low border border-outline-variant/50 text-on-surface font-body-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors" />
-            <input type="text" value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="Role Title"
-              className="w-full mb-lg px-md py-sm rounded-lg bg-surface-container-low border border-outline-variant/50 text-on-surface font-body-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors" />
-            <div className="flex gap-sm">
-              <button onClick={handleAdd} disabled={saving || !newCompany.trim() || !newRole.trim()}
-                className="flex-1 ai-button text-on-primary font-label-md text-label-md py-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                {saving ? 'Saving…' : 'Save to Track'}
+      {/* items-start: each panel is as tall as its own content. Stretching the
+          shorter one to match its neighbour leaves a blank band inside it. */}
+      <div className="grid items-start gap-3 lg:grid-cols-[1.6fr_1fr]">
+        {/* Applications */}
+        <section aria-labelledby="apps-h" className="panel">
+          <div className="flex items-baseline justify-between border-b border-rule px-5 py-3">
+            <h2 id="apps-h" className="text-section">Applications</h2>
+            {apps.length > recent.length && (
+              <span className="text-small text-muted">
+                showing <span className="fig">{recent.length}</span> of <span className="fig">{apps.length}</span>
+              </span>
+            )}
+          </div>
+
+          {loadingApps ? (
+            <p className="px-5 py-8 text-body text-muted">Loading…</p>
+          ) : appsError ? (
+            <p className="px-5 py-8 text-body text-negative">{appsError}</p>
+          ) : recent.length === 0 ? (
+            <div className="px-5 py-8">
+              <p className="text-body text-muted">
+                No applications yet. Each one you add moves through Saved, Applied, Interviewing and
+                then Offer or Rejected.
+              </p>
+              <button type="button" className="btn btn-secondary mt-4" onClick={() => setShowAdd(true)}>
+                Add the first one
               </button>
-              <button onClick={() => setShowModal(false)}
-                className="flex-1 bg-surface-container text-on-surface font-label-md text-label-md py-sm rounded-lg hover:bg-surface-container-high transition-colors">
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-small text-muted">
+                  <th scope="col" className="px-5 pb-2 pt-3 font-normal">Company</th>
+                  <th scope="col" className="px-5 pb-2 pt-3 font-normal">Role</th>
+                  <th scope="col" className="px-5 pb-2 pt-3 font-normal">Stage</th>
+                  <th scope="col" className="hidden px-5 pb-2 pt-3 text-right font-normal sm:table-cell">Added</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((a) => (
+                  <tr key={a.id} className="border-t border-rule">
+                    <td className="px-5 py-3 text-body">{a.company}</td>
+                    <td className="px-5 py-3 text-body text-muted">{a.role}</td>
+                    <td className="px-5 py-3">
+                      <span className={`pill ${STAGE_PILL[a.status] || STAGE_PILL.Saved}`}>{a.status}</span>
+                    </td>
+                    {/* The API maps the column to camelCase (db.js mapAppRow);
+                        reading created_at here left this empty for every row. */}
+                    <td className="fig hidden px-5 py-3 text-right text-small text-muted sm:table-cell">{timeAgo(a.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        {/* Gmail */}
+        <section aria-labelledby="mail-h" className="panel">
+          <div className="flex items-baseline justify-between border-b border-rule px-5 py-3">
+            <h2 id="mail-h" className="text-section">Inbox scan</h2>
+            {gmailConfigured && (
+              <button
+                type="button"
+                className="btn btn-quiet h-7 px-2 text-small"
+                onClick={handleScanGmail}
+                disabled={gmailScanning}
+              >
+                <Icon name="refresh" size={14} />
+                {gmailScanning ? 'Scanning…' : 'Scan'}
+              </button>
+            )}
+          </div>
+
+          <div className="px-5 py-4">
+            {gmailConfigured === null ? (
+              <p className="text-body text-muted">Checking…</p>
+            ) : gmailConfigured === false ? (
+              // Honest unavailable state instead of a button that always fails.
+              <p className="text-body text-muted">
+                Mail scanning is turned off on this server, so there is nothing to connect to yet.
+                Track applications by hand in the meantime.
+              </p>
+            ) : (
+              <>
+                <p className="text-body text-muted">
+                  Reads the last 30 days of mail, read-only, and sorts job replies by what they are.
+                </p>
+                <button type="button" className="btn btn-secondary mt-4" onClick={handleConnectGmail}>
+                  <Icon name="mail" />
+                  Connect Gmail
+                </button>
+              </>
+            )}
+
+            {gmailNote && <p className="mt-3 text-small text-muted">{gmailNote}</p>}
+          </div>
+
+          {gmailMsgs.length > 0 && (
+            <ul className="border-t border-rule">
+              {gmailMsgs.slice(0, 6).map((m) => (
+                <li key={m.id} className="border-b border-rule px-5 py-3 last:border-b-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-body">{m.subject || '(no subject)'}</span>
+                    <span className={`pill shrink-0 ${MAIL_PILL[m.classification] || MAIL_PILL['Job-related']}`}>
+                      {m.classification}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-small text-muted">{m.from}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      {showAdd && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-h"
+          onClick={(e) => e.target === e.currentTarget && setShowAdd(false)}
+        >
+          <div className="w-full max-w-sm rounded-card bg-surface p-5 shadow-lg">
+            <h2 id="add-h" className="text-section">Add application</h2>
+            <label className="mt-4 block text-body font-medium" htmlFor="company">Company</label>
+            <input
+              id="company"
+              className="field mt-2"
+              value={newCompany}
+              onChange={(e) => setNewCompany(e.target.value)}
+              autoFocus
+            />
+            <label className="mt-4 block text-body font-medium" htmlFor="role">Role</label>
+            <input
+              id="role"
+              className="field mt-2"
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" className="btn btn-quiet" onClick={() => setShowAdd(false)}>
                 Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAdd}
+                disabled={saving || !newCompany.trim() || !newRole.trim()}
+              >
+                {saving ? 'Saving…' : 'Add'}
               </button>
             </div>
           </div>
@@ -293,6 +407,4 @@ const Dashboard = () => {
       )}
     </div>
   );
-};
-
-export default Dashboard;
+}

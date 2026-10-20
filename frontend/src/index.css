@@ -1,201 +1,211 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   CareerAI design system — ported into Tailwind v4 (@theme).
-   Defines the same tokens the mockups use: bg-primary,
-   text-on-surface, p-md, font-headline-lg, text-body-sm, etc.
+   CareerAI — "Achromatic ledger"
+   Style dealt by design-taste-frontend, seed 695084161.
+
+   The move: no colour anywhere in the chrome. Counts and figures are set in
+   ink; the single chart hue marks only the stage holding the most
+   applications; the sole other hue is a small signal where something changed.
+
+   The face: every figure is set in Geist Mono, so a job hunt reads as what it
+   is — a ledger of applications entered, moved and closed.
+
+   This replaces a Material Design 3 token set (surface-container-highest,
+   on-tertiary-fixed-variant, …) whose defaults — indigo accent on chrome,
+   gradient buttons, glass panels, icons in tinted squares — are the house
+   style of every generated dashboard.
    ───────────────────────────────────────────────────────────── */
 @theme {
-  /* Colors */
-  --color-error: #ba1a1a;
-  --color-tertiary-fixed-dim: #ffb95f;
-  --color-on-error-container: #93000a;
-  --color-outline-variant: #c7c4d8;
-  --color-on-secondary-container: #006172;
-  --color-background: #f8f9ff;
-  --color-on-secondary-fixed: #001f26;
-  --color-on-tertiary: #ffffff;
-  --color-on-background: #0b1c30;
-  --color-surface-container-low: #eff4ff;
-  --color-tertiary: #684000;
-  --color-on-secondary-fixed-variant: #004e5c;
-  --color-surface-container-high: #dce9ff;
-  --color-on-primary-fixed: #0f0069;
-  --color-surface-container: #e5eeff;
-  --color-on-primary: #ffffff;
-  --color-primary-fixed-dim: #c3c0ff;
-  --color-surface-bright: #f8f9ff;
-  --color-primary: #3525cd;
-  --color-tertiary-fixed: #ffddb8;
-  --color-secondary-fixed: #acedff;
-  --color-on-primary-fixed-variant: #3323cc;
-  --color-surface-container-lowest: #ffffff;
-  --color-on-tertiary-container: #ffd4a4;
-  --color-on-surface: #0b1c30;
-  --color-surface-container-highest: #d3e4fe;
-  --color-on-surface-variant: #464555;
-  --color-on-error: #ffffff;
-  --color-on-tertiary-fixed: #2a1700;
-  --color-secondary: #00687a;
-  --color-inverse-surface: #213145;
-  --color-outline: #777587;
-  --color-secondary-container: #57dffe;
-  --color-inverse-primary: #c3c0ff;
-  --color-primary-fixed: #e2dfff;
-  --color-inverse-on-surface: #eaf1ff;
-  --color-surface: #f8f9ff;
-  --color-secondary-fixed-dim: #4cd7f6;
-  --color-on-primary-container: #dad7ff;
-  --color-surface-variant: #d3e4fe;
-  --color-surface-tint: #4d44e3;
-  --color-primary-container: #4f46e5;
-  --color-surface-dim: #cbdbf5;
-  --color-on-tertiary-fixed-variant: #653e00;
-  --color-on-secondary: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-tertiary-container: #885500;
+  /* Ground and surfaces. Separation is a tone step or one hairline, never a
+     shadow: nothing on this screen floats except menus and dialogs. */
+  --color-ground: #f8f8f8;
+  --color-surface: #ffffff;
+  --color-raised: #eeeeee;
+  --color-border: #e6e6e6;
+  --color-rule: #f0f0f0;
+  --color-control: #d4d4d4;
 
-  /* Spacing (named scale: p-md, gap-sm, py-lg, ...) */
-  --spacing-xs: 4px;
-  --spacing-base: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-gutter: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
-  --spacing-margin-mobile: 16px;
-  --spacing-margin-desktop: 48px;
+  /* Ink. Running text is full ink; grey is for secondary notes only. */
+  --color-text: #0a0a0a;
+  --color-muted: #6b6b6b;
 
-  /* Border radius */
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
+  /* The one primary action is near-black — not a brand fill. */
+  --color-accent: #141414;
 
-  /* Font families */
-  --font-headline-xl: "Geist", sans-serif;
-  --font-headline-lg: "Geist", sans-serif;
-  --font-headline-lg-mobile: "Geist", sans-serif;
-  --font-headline-md: "Geist", sans-serif;
-  --font-label-md: "Geist", sans-serif;
-  --font-label-sm: "Geist", sans-serif;
-  --font-body-lg: "Inter", sans-serif;
-  --font-body-md: "Inter", sans-serif;
-  --font-body-sm: "Inter", sans-serif;
+  /* Status. Used on data and state, never on chrome. */
+  --color-positive: #2e7d32;
+  --color-negative: #c4242a;
+  --color-warning: #92400e;
 
-  /* Type scale (text-headline-lg, text-body-sm, ...) */
-  --text-headline-xl: 40px;
-  --text-headline-xl--line-height: 48px;
-  --text-headline-xl--letter-spacing: -0.02em;
-  --text-headline-xl--font-weight: 700;
+  /* Chart: ink first, grey for comparison, the one hue for the live stage. */
+  --color-chart-1: #141414;
+  --color-chart-2: #8a8a8a;
+  --color-chart-3: #1d5fbf;
 
-  --text-headline-lg: 32px;
-  --text-headline-lg--line-height: 40px;
-  --text-headline-lg--letter-spacing: -0.02em;
-  --text-headline-lg--font-weight: 700;
+  /* Pills: pale tint, dark ink of the same hue. Inside rows only. */
+  --color-pill-positive-bg: #dcfae5;
+  --color-pill-positive-ink: #04250e;
+  --color-pill-negative-bg: #ffedea;
+  --color-pill-negative-ink: #831c1e;
+  --color-pill-warning-bg: #fffbeb;
+  --color-pill-warning-ink: #92400e;
+  --color-pill-neutral-bg: #eeeeee;
+  --color-pill-neutral-ink: #3d3d3d;
 
-  --text-headline-lg-mobile: 28px;
-  --text-headline-lg-mobile--line-height: 34px;
-  --text-headline-lg-mobile--letter-spacing: -0.01em;
-  --text-headline-lg-mobile--font-weight: 700;
+  --radius-card: 8px;
+  --radius-control: 6px;
 
-  --text-headline-md: 24px;
-  --text-headline-md--line-height: 32px;
-  --text-headline-md--letter-spacing: -0.01em;
-  --text-headline-md--font-weight: 600;
+  /* One gap value, horizontally and vertically. Density: sparse. */
+  --spacing-gap: 12px;
+  --spacing-pad: 24px;
 
-  --text-body-lg: 18px;
-  --text-body-lg--line-height: 28px;
-  --text-body-lg--font-weight: 400;
+  --font-sans: "Geist", Inter, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --text-body-md: 16px;
-  --text-body-md--line-height: 24px;
-  --text-body-md--font-weight: 400;
-
-  --text-body-sm: 14px;
-  --text-body-sm--line-height: 20px;
-  --text-body-sm--font-weight: 400;
-
-  --text-label-md: 14px;
-  --text-label-md--line-height: 16px;
-  --text-label-md--letter-spacing: 0.02em;
-  --text-label-md--font-weight: 600;
-
-  --text-label-sm: 12px;
-  --text-label-sm--line-height: 14px;
-  --text-label-sm--letter-spacing: 0.03em;
-  --text-label-sm--font-weight: 500;
+  /* Five sizes, and no more. */
+  --text-title: 24px;
+  --text-title--line-height: 30px;
+  --text-title--font-weight: 600;
+  --text-section: 16px;
+  --text-section--line-height: 22px;
+  --text-section--font-weight: 500;
+  --text-kpi: 30px;
+  --text-kpi--line-height: 34px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-small: 12px;
+  --text-small--line-height: 16px;
 }
 
 /* ── Base ── */
+html {
+  background-color: var(--color-ground);
+}
+
 body {
   margin: 0;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: var(--color-on-background);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-text);
+  background-color: var(--color-ground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-background);
-  /* Subtle AI mesh gradient (from the design mockups) */
-  background-image:
-    radial-gradient(at 0% 0%, hsla(245, 86%, 85%, 0.3) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(192, 80%, 85%, 0.3) 0px, transparent 50%);
-  background-attachment: fixed;
 }
 
-/* ── Material Symbols icon font ──
-   Self-hosted, subsetted to only the icons this app uses (~17KB vs ~3.5MB).
-   Served locally because Brave blocks the Google Fonts CDN by default, which
-   left every icon rendering as its raw ligature text ("robot_2", "arrow_forward").
-   To add a new icon, re-subset: see DEVELOPMENT.md. */
-@font-face {
-  font-family: "Material Symbols Outlined";
-  font-style: normal;
-  font-weight: 100 700;
-  font-display: block;
-  src: url("/fonts/material-symbols-subset.woff2") format("woff2");
+/* Every figure is a ledger column: same width per digit, so counts and
+   amounts line up down a column and do not jitter as they update. */
+.fig {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
-.material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
+table,
+.fig-col {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Controls ──
+   One primary (near-black), one secondary (grey). No gradients, no shadows. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-feature-settings: "liga";
-  -webkit-font-feature-settings: "liga";
-  -webkit-font-smoothing: antialiased;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
-.material-symbols-outlined.fill {
-  font-variation-settings: "FILL" 1;
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #000000;
+}
+.btn-secondary {
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: #e4e4e4;
+}
+.btn-quiet {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+.btn-quiet:hover:not(:disabled) {
+  background: var(--color-raised);
 }
 
-/* ── Glassmorphism + AI gradient utilities ── */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 12px rgba(53, 37, 205, 0.05);
+/* Focus is visible on everything interactive, at the control radius. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-chart-3);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
 }
-.ai-gradient-text {
-  background: linear-gradient(to right, #3525cd, #00687a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+
+/* ── Panels ── */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
 }
-.ai-gradient-bg {
-  background: linear-gradient(135deg, #3525cd 0%, #00687a 100%);
+
+/* ── Fields ── */
+.field {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  color: var(--color-text);
 }
-.ai-button {
-  background: linear-gradient(135deg, #3525cd 0%, #00687a 100%);
-  transition: all 0.3s ease;
+.field::placeholder {
+  color: var(--color-muted);
 }
-.ai-button:hover {
-  box-shadow: 0 0 12px 2px rgba(87, 223, 254, 0.5);
-  transform: translateY(-1px);
+.field:focus {
+  border-color: var(--color-control);
+}
+textarea.field {
+  height: auto;
+  padding: 10px 12px;
+  line-height: 20px;
+  resize: vertical;
+}
+
+/* ── Pills ── Inside rows and beside a value only. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Motion on app screens is feedback only — press, hover, focus, a row
+   arriving. Nothing performs an entrance. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

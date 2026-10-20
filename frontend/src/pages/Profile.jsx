@@ -1,48 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { authFetch } from '../utils/auth';
-
-const Icon = ({ name, className = '', fill = false }) => (
-  <span className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`} aria-hidden="true">{name}</span>
-);
-
-const inputClass = 'w-full bg-surface-container-low border border-outline-variant/50 focus:bg-surface focus:ring-1 focus:ring-primary focus:border-primary rounded-lg px-md py-sm font-body-md text-on-surface outline-none transition-colors';
-const labelClass = 'font-label-md text-label-md text-on-surface-variant';
-
-function SectionCard({ icon, title, children }) {
-  return (
-    <div className="bg-surface rounded-xl border border-outline-variant/30 p-lg">
-      <h2 className="font-headline-md text-headline-md text-on-background mb-md flex items-center gap-sm">
-        <Icon name={icon} className="text-primary" /> {title}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-function Field({ label, icon, ...inputProps }) {
-  return (
-    <div className="space-y-xs relative">
-      <label className={labelClass}>{label}</label>
-      {icon && <Icon name={icon} className="absolute bottom-2.5 left-sm text-outline text-[20px] pointer-events-none" />}
-      <input className={`${inputClass} ${icon ? 'pl-2xl' : ''}`} {...inputProps} />
-    </div>
-  );
-}
+import Icon from '../components/Icon';
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', phone: '', location: '',
   college: '', board: '', degree: '', graduationYear: '', cgpa: '',
-  skills: '', yearsOfExperience: '', currentCompany: '', currentRole: '', linkedIn: '', portfolio: '',
-  bio: '',
+  skills: '', yearsOfExperience: '', currentCompany: '', currentRole: '',
+  linkedIn: '', portfolio: '', bio: '',
 };
 
-function calcCompleteness(data) {
-  const fields = Object.values(data);
-  const filled = fields.filter(v => v && v.trim()).length;
-  return Math.round((filled / fields.length) * 100);
-}
+/**
+ * Settings in two columns: a label column carrying the section's name and the
+ * reason it matters, beside the panel of fields. Sections are split by a full
+ * width rule, never by a card edge.
+ */
+const SECTIONS = [
+  {
+    title: 'You',
+    help: 'Used to fill the name, contact and location fields on application forms.',
+    fields: [
+      ['firstName', 'First name'], ['lastName', 'Last name'],
+      ['email', 'Email'], ['phone', 'Phone'], ['location', 'Location'],
+    ],
+  },
+  {
+    title: 'Education',
+    help: 'Most graduate applications ask for all four of these.',
+    fields: [
+      ['college', 'College'], ['degree', 'Degree'],
+      ['graduationYear', 'Graduation year'], ['cgpa', 'CGPA'], ['board', 'Board'],
+    ],
+  },
+  {
+    title: 'Work',
+    help: 'Your skills line is what the AI draws on when it drafts an answer.',
+    fields: [
+      ['currentRole', 'Current role'], ['currentCompany', 'Current company'],
+      ['yearsOfExperience', 'Years of experience'], ['skills', 'Skills'],
+      ['linkedIn', 'LinkedIn'], ['portfolio', 'Portfolio'],
+    ],
+  },
+];
 
-const Profile = () => {
+export default function Profile() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -67,15 +67,15 @@ const Profile = () => {
           linkedIn: pr.linkedIn || '', portfolio: pr.portfolio || '',
           bio: data.bio || '',
         });
-      } catch (err) {
-        console.error('Failed to load profile', err);
+      } catch {
+        setApiError('Could not load your profile.');
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -90,126 +90,107 @@ const Profile = () => {
           bio: form.bio,
         }),
       });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to save profile');
-      }
+      if (!response.ok) throw new Error((await response.json()).error || 'Failed to save');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setApiError(err.message === 'Failed to fetch' ? 'Backend server is offline.' : err.message);
+      setApiError(err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const total = Object.keys(EMPTY_FORM).length;
+  const filled = Object.values(form).filter((v) => v && String(v).trim()).length;
+  const completeness = Math.round((filled / total) * 100);
+
   if (loading) {
-    return <div className="p-2xl text-center font-body-md text-on-surface-variant animate-pulse">Loading Profile…</div>;
+    return (
+      <div className="mx-auto max-w-[1100px]">
+        <h1 className="text-title tracking-tight">Profile</h1>
+        <p className="mt-1 text-body text-muted">Loading…</p>
+      </div>
+    );
   }
 
-  const completeness = calcCompleteness(form);
-
   return (
-    <div className="max-w-5xl">
-      <header className="mb-xl">
-        <h1 className="font-headline-xl text-headline-xl text-on-background tracking-tight">AI Identity Hub</h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-xs">Your secure source of truth for the autofill engine.</p>
+    <div className="mx-auto max-w-[1100px]">
+      <header className="mb-7 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-title tracking-tight">Profile</h1>
+          <p className="mt-1 text-body text-muted">
+            <span className="fig">{filled}</span> of <span className="fig">{total}</span> fields filled
+            {completeness < 80 && '. Autofill skips anything blank.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {saved && (
+            <span role="status" className="flex items-center gap-1 text-body text-positive">
+              <Icon name="check" /> Saved
+            </span>
+          )}
+          <button type="button" className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
-        {/* Forms */}
-        <div className="lg:col-span-2 space-y-lg">
-          <SectionCard icon="person" title="Personal Info">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-              <Field label="First Name" name="firstName" value={form.firstName} onChange={handleChange} placeholder="John" />
-              <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} placeholder="Doe" />
-              <Field label="Email Address" icon="mail" name="email" type="email" value={form.email} onChange={handleChange} placeholder="hello@example.com" />
-              <Field label="Phone Number" icon="call" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+1 (555) 000-0000" />
-              <div className="md:col-span-2">
-                <Field label="Location" icon="location_on" name="location" value={form.location} onChange={handleChange} placeholder="San Francisco, CA" />
-              </div>
-            </div>
-          </SectionCard>
+      {apiError && (
+        <p role="alert" className="mb-3 flex items-start gap-2 rounded-card border border-border bg-surface px-4 py-3 text-body text-negative">
+          <Icon name="alert" className="mt-[2px] shrink-0" />
+          {apiError}
+        </p>
+      )}
 
-          <SectionCard icon="school" title="Academic Details">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-              <div className="md:col-span-2">
-                <Field label="College / University" name="college" value={form.college} onChange={handleChange} placeholder="MIT, Stanford, IIT Delhi…" />
-              </div>
-              <Field label="Board / University Name" name="board" value={form.board} onChange={handleChange} placeholder="CBSE, University of…" />
-              <Field label="Degree / Program" name="degree" value={form.degree} onChange={handleChange} placeholder="B.Tech Computer Science" />
-              <Field label="Graduation Year" name="graduationYear" value={form.graduationYear} onChange={handleChange} placeholder="2025" />
-              <Field label="CGPA / Percentage" name="cgpa" value={form.cgpa} onChange={handleChange} placeholder="9.2 / 92%" />
-            </div>
-          </SectionCard>
-
-          <SectionCard icon="work" title="Professional Details">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
-              <div className="md:col-span-2 space-y-xs">
-                <label className={labelClass}>Skills</label>
-                <input name="skills" value={form.skills} onChange={handleChange} className={inputClass} placeholder="React, Node.js, Python, Machine Learning…" />
-                <p className="font-label-sm text-label-sm text-outline">Separate with commas</p>
-              </div>
-              <Field label="Years of Experience" name="yearsOfExperience" value={form.yearsOfExperience} onChange={handleChange} placeholder="2" />
-              <Field label="Current Company" name="currentCompany" value={form.currentCompany} onChange={handleChange} placeholder="Google, Startup, Freelance…" />
-              <Field label="Current Role" name="currentRole" value={form.currentRole} onChange={handleChange} placeholder="Software Engineer" />
-              <Field label="LinkedIn URL" icon="link" name="linkedIn" value={form.linkedIn} onChange={handleChange} placeholder="https://linkedin.com/in/…" />
-              <div className="md:col-span-2">
-                <Field label="Portfolio / Website" icon="language" name="portfolio" value={form.portfolio} onChange={handleChange} placeholder="https://yoursite.com" />
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard icon="auto_awesome" title="Professional Narrative">
-            <div className="space-y-xs">
-              <label className={labelClass}>Tell us about yourself (used by AI for answer generation)</label>
-              <textarea name="bio" value={form.bio} onChange={handleChange} rows="5" className={`${inputClass} resize-none`} placeholder="Passionate software engineer with experience in…" />
-            </div>
-          </SectionCard>
-        </div>
-
-        {/* Sidebar status */}
-        <div className="lg:col-span-1">
-          <div className="bg-inverse-surface rounded-xl p-lg text-inverse-on-surface shadow-xl sticky top-lg space-y-lg">
-            <div>
-              <h3 className="font-headline-md text-headline-md mb-xs">Profile Status</h3>
-              <p className="font-body-sm text-body-sm text-inverse-on-surface/70 leading-relaxed">
-                The browser extension uses this data to autofill forms and generate AI answers.
-              </p>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-xs">
-                <span className="font-label-md text-label-md text-inverse-on-surface/80">Completeness</span>
-                <span className="font-headline-md text-headline-md">{completeness}%</span>
-              </div>
-              <div className="w-full bg-inverse-on-surface/20 rounded-full h-2 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-primary-fixed-dim to-secondary-container transition-all duration-700" style={{ width: `${completeness}%` }} />
-              </div>
-              {completeness < 100 && (
-                <p className="font-label-sm text-label-sm text-inverse-on-surface/60 mt-xs">Fill all fields for the best autofill accuracy.</p>
-              )}
-            </div>
-
-            {apiError && (
-              <div className="p-sm bg-error/20 border border-error/40 rounded-lg font-body-sm text-body-sm text-error-container">
-                ⚠️ {apiError}
-              </div>
-            )}
-
-            <button onClick={handleSave} disabled={isSaving}
-              className={`w-full py-sm rounded-lg font-label-md text-label-md flex items-center justify-center gap-sm transition-all ${
-                saved ? 'bg-secondary text-on-secondary' : 'ai-button text-on-primary'
-              } disabled:opacity-60 disabled:cursor-not-allowed`}>
-              {isSaving ? <span className="animate-pulse">Syncing…</span>
-                : saved ? <>Synced <Icon name="check" className="text-[18px]" /></>
-                : <><Icon name="save" className="text-[18px]" /> Save Profile</>}
-            </button>
+      {SECTIONS.map((section, i) => (
+        <section
+          key={section.title}
+          aria-labelledby={`sec-${i}`}
+          className={`grid gap-6 py-8 lg:grid-cols-[320px_1fr] ${i > 0 ? 'border-t border-border' : 'pt-0'}`}
+        >
+          <div>
+            <h2 id={`sec-${i}`} className="text-section">{section.title}</h2>
+            <p className="mt-1 text-body text-muted">{section.help}</p>
           </div>
+          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            {section.fields.map(([name, label]) => (
+              <div key={name}>
+                <label className="block text-body font-medium" htmlFor={name}>{label}</label>
+                <input
+                  id={name}
+                  name={name}
+                  className="field mt-2"
+                  value={form[name]}
+                  placeholder="—"
+                  onChange={handleChange}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <section aria-labelledby="sec-bio" className="grid gap-6 border-t border-border py-8 lg:grid-cols-[320px_1fr]">
+        <div>
+          <h2 id="sec-bio" className="text-section">Summary</h2>
+          <p className="mt-1 text-body text-muted">
+            A short description of you, written from your resume. Applications that ask
+            “tell us about yourself” start from this.
+          </p>
         </div>
-      </div>
+        <div>
+          <label className="sr-only" htmlFor="bio">Summary</label>
+          <textarea
+            id="bio"
+            name="bio"
+            className="field"
+            rows={5}
+            value={form.bio}
+            placeholder="—"
+            onChange={handleChange}
+          />
+        </div>
+      </section>
     </div>
   );
-};
-
-export default Profile;
+}

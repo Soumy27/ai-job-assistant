@@ -293,7 +293,12 @@ function extractStructuredData(rawText) {
       linkedIn: extractLinkedIn(rawText),
       portfolio: extractPortfolio(rawText),
     },
-    bio: summary || exp.details || '',
+    // Only a real summary/objective section counts as a bio. The old code fell
+    // back to the first five lines of the experience section joined with " | ",
+    // which pasted raw internship bullets into the profile and read as if the
+    // AI had written it. With no summary section, leave it empty and let the
+    // AI pass fill it — an empty field is honest, a pasted one is not.
+    bio: summary,
     rawText,
   };
 }
@@ -306,7 +311,7 @@ async function aiExtractStructuredData(rawText) {
   const geminiModel = getGemini();
   if (!geminiModel) return null;
 
-  const prompt = `Extract structured data from the resume text below.
+  const prompt = `You are reading a candidate's resume. Extract their details, and write a summary of them.
 Return ONLY a JSON object with EXACTLY this shape (use "" for anything not found, never invent data):
 {
   "personalInfo": { "firstName": "", "lastName": "", "email": "", "phone": "", "location": "" },
@@ -314,12 +319,29 @@ Return ONLY a JSON object with EXACTLY this shape (use "" for anything not found
   "professionalInfo": { "skills": "", "yearsOfExperience": "", "currentCompany": "", "currentRole": "", "linkedIn": "", "portfolio": "" },
   "bio": ""
 }
-Rules:
-- "skills" = comma-separated list. "bio" = a 1-2 sentence professional summary.
-- Output strictly valid JSON, no markdown fences, no commentary.
+
+Rules for the extracted fields:
+- "skills" = comma-separated list of technologies and abilities, most relevant first.
+- "yearsOfExperience" = a number as a string ("2"), counting internships as experience. "" if it cannot be worked out.
+- Copy emails, phones and URLs exactly as written.
+
+Rules for "bio" — this is the important one:
+- Read the WHOLE resume first, then write 2-3 sentences describing this person as a
+  whole: what they do, the strongest evidence of it, and what they are moving toward.
+- SYNTHESISE. Do NOT copy, quote or lightly reword any line, bullet or job description
+  from the resume. If a sentence could be found by searching the resume text, rewrite it.
+- Do not simply describe the most recent internship or job. That is one data point about
+  them, not a summary of them. Weigh education, projects, skills and all roles together.
+- Write in third person without the pronoun: "Final-year CS student who has shipped…",
+  never "I am" and never starting with their name.
+- Ground every claim in the resume. No adjectives you cannot point to evidence for
+  ("passionate", "hard-working", "detail-oriented" are banned unless the resume proves it).
+- Plain specific English. No buzzwords, no marketing voice.
+
+Output strictly valid JSON, no markdown fences, no commentary.
 
 RESUME TEXT:
-${rawText.substring(0, 6000)}`;
+${rawText.substring(0, 20000)}`;
 
   try {
     const result = await geminiModel.generateContent(prompt);
