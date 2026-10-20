@@ -26,7 +26,13 @@ function gmailConfigured() {
 
 // ── 1. Start the flow: return the Google consent URL ──
 router.get('/auth-url', authMiddleware, (req, res) => {
-  if (!gmailConfigured()) return res.status(503).json({ error: 'Gmail integration is not configured on the server.' });
+  if (!gmailConfigured()) {
+    // Name the missing vars in the logs so the operator can fix it immediately;
+    // GET /api/health reports the same thing without exposing values.
+    const missing = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI'].filter(k => !process.env[k]);
+    console.error('Gmail auth-url requested but not configured. Missing env vars:', missing.join(', '));
+    return res.status(503).json({ error: 'Gmail integration is not configured on the server.' });
+  }
   // Short-lived signed token carries the user id through to /callback (also CSRF guard).
   const state = jwt.sign({ id: req.user.id }, JWT_SECRET, { expiresIn: '10m' });
   const url = oauthClient().generateAuthUrl({
@@ -85,18 +91,32 @@ router.post('/scan', authMiddleware, async (req, res) => {
 
     // Gmail search syntax: job-related keywords, last 30 days.
     const q = '(application OR interview OR "thank you for applying" OR offer OR "we regret") newer_than:30d';
-    const list = await gmailGet(`messages?q=${encodeURIComponent(q)}&maxResults=10`, accessToken);
+    const maxResults = Math.min(Math.max(parseInt(req.body?.maxResults, 10) || 25, 1), 50);
+    const list = await gmailGet(`messages?q=${encodeURIComponent(q)}&maxResults=${maxResults}`, accessToken);
     const messages = list.messages || [];
 
+    // Fetch metadata concurrently instead of one-at-a-time: a 25-message scan
+    // was 25 serial round trips (~5s+). Capped so we don't trip Gmail's
+    // per-user rate limit, and a single failed message can't fail the scan.
+    const CONCURRENCY = 5;
     const opportunities = [];
-    for (const m of messages) {
-      // 'metadata' format = headers + snippet only (fast; we never read full bodies).
-      const msg = await gmailGet(`messages/${m.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`, accessToken);
-      const headers = msg.payload?.headers || [];
-      const subject = headers.find(h => h.name === 'Subject')?.value || '';
-      const from = headers.find(h => h.name === 'From')?.value || '';
-      const snippet = msg.snippet || '';
-      opportunities.push({ id: m.id, subject, from, snippet, classification: classify(subject, snippet) });
+    for (let i = 0; i < messages.length; i += CONCURRENCY) {
+      const batch = messages.slice(i, i + CONCURRENCY);
+      const settled = await Promise.allSettled(batch.map(m =>
+        // 'metadata' format = headers + snippet only (fast; we never read full bodies).
+        gmailGet(`messages/${m.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`, accessToken)
+          .then(msg => {
+            const headers = msg.payload?.headers || [];
+            const header = (n) => headers.find(h => h.name === n)?.value || '';
+            const subject = header('Subject');
+            const snippet = msg.snippet || '';
+            return { id: m.id, subject, from: header('From'), date: header('Date'), snippet, classification: classify(subject, snippet) };
+          })
+      ));
+      for (const r of settled) {
+        if (r.status === 'fulfilled') opportunities.push(r.value);
+        else console.error('Gmail message fetch failed:', r.reason?.message);
+      }
     }
 
     res.json({ message: 'Gmail scan completed', connected: true, count: opportunities.length, opportunities });
