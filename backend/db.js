@@ -77,6 +77,10 @@ async function initSchema() {
 
     // Migration: add Gmail refresh-token storage to existing users tables.
     await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_refresh_token TEXT`;
+    // Password reset: only a SHA-256 hash of the token is stored, so a leaked
+    // database row cannot be replayed to take over an account.
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_hash TEXT`;
+    await db`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ`;
 
     console.log('✅ Neon tables ready');
     return true;
@@ -280,6 +284,58 @@ async function saveGoogleToken(userId, refreshToken) {
   return true;
 }
 
+// ── Password reset ──
+// The token itself is never stored. We keep its SHA-256 hash and an expiry,
+// look the user up by hash, and clear both the moment it is used.
+
+async function setResetToken(email, tokenHash, expiresAt) {
+  const db = getDB();
+  if (!db) {
+    if (!global.mockUsers) global.mockUsers = {};
+    const u = global.mockUsers[email];
+    if (!u) return false;
+    u.resetTokenHash = tokenHash;
+    u.resetTokenExpires = expiresAt;
+    return true;
+  }
+  const rows = await db`
+    UPDATE users SET reset_token_hash = ${tokenHash}, reset_token_expires = ${expiresAt}
+    WHERE email = ${email} RETURNING user_id`;
+  return rows.length > 0;
+}
+
+async function findUserByResetTokenHash(tokenHash) {
+  const db = getDB();
+  if (!db) {
+    if (!global.mockUsers) global.mockUsers = {};
+    const u = Object.values(global.mockUsers).find((x) => x.resetTokenHash === tokenHash);
+    if (!u) return null;
+    if (!u.resetTokenExpires || new Date(u.resetTokenExpires) < new Date()) return null;
+    return u;
+  }
+  const rows = await db`
+    SELECT user_id as "userId", name, email FROM users
+    WHERE reset_token_hash = ${tokenHash} AND reset_token_expires > NOW()`;
+  return rows[0] || null;
+}
+
+async function updatePasswordAndClearReset(email, passwordHash) {
+  const db = getDB();
+  if (!db) {
+    if (!global.mockUsers) global.mockUsers = {};
+    const u = global.mockUsers[email];
+    if (!u) return false;
+    u.password = passwordHash;
+    u.resetTokenHash = null;
+    u.resetTokenExpires = null;
+    return true;
+  }
+  const rows = await db`
+    UPDATE users SET password = ${passwordHash}, reset_token_hash = NULL, reset_token_expires = NULL
+    WHERE email = ${email} RETURNING user_id`;
+  return rows.length > 0;
+}
+
 async function getGoogleToken(userId) {
   const db = getDB();
   if (!db) {
@@ -293,4 +349,5 @@ module.exports = {
   initSchema, createUser, findUserByEmail, getProfile, saveProfile,
   getApplications, createApplication, updateApplicationStatus, deleteApplication,
   saveGoogleToken, getGoogleToken,
+  setResetToken, findUserByResetTokenHash, updatePasswordAndClearReset,
 };

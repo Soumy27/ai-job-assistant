@@ -103,6 +103,12 @@ export default function Login() {
             </p>
           )}
 
+          {isLogin && (
+            <p className="mb-4 text-body">
+              <a href="/forgot-password" className="text-muted hover:text-text">Forgot your password?</a>
+            </p>
+          )}
+
           <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
             {isLoading ? 'Working…' : isLogin ? 'Sign in' : 'Create account'}
           </button>

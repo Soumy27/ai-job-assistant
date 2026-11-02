@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ResumeUpload from './pages/ResumeUpload';
 import { Privacy, Terms } from './pages/Legal';
+import { ForgotPassword, ResetPassword } from './pages/ResetPassword';
 import { isLoggedIn, login, logout } from './utils/auth';
 
 function App() {
@@ -43,6 +44,8 @@ function App() {
         <Route path="/terms" element={<Terms />} />
 
         <Route path="/login" element={authenticated ? <Navigate to="/" /> : <Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={authenticated ? <Layout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />
           <Route path="profile" element={<Profile />} />
