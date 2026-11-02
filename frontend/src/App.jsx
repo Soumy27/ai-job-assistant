@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ResumeUpload from './pages/ResumeUpload';
+import { Privacy, Terms } from './pages/Legal';
 import { isLoggedIn, login, logout } from './utils/auth';
 
 function App() {
@@ -36,6 +37,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public: Google must be able to fetch these without a session before
+            it will let the OAuth consent screen be published. */}
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+
         <Route path="/login" element={authenticated ? <Navigate to="/" /> : <Login />} />
         <Route path="/" element={authenticated ? <Layout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />

@@ -121,6 +121,12 @@ export default function Login() {
             {isLogin ? 'Create one' : 'Sign in'}
           </button>
         </p>
+
+        <p className="mt-10 text-small text-muted">
+          <a href="/privacy" className="hover:text-text">Privacy</a>
+          <span aria-hidden="true"> · </span>
+          <a href="/terms" className="hover:text-text">Terms</a>
+        </p>
       </div>
     </div>
   );
